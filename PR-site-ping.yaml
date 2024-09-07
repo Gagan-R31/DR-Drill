@@ -4,7 +4,7 @@
   tasks:
     - name: Check if the app server is alive
       uri:
-        url: "http://44.202.97.64"
+        url: "http://143.244.142.40"
         return_content: yes
       register: result
       until: '"alive" in result.content'
