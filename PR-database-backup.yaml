@@ -1,0 +1,29 @@
+- name: Backup PostgreSQL database and upload to S3
+  hosts: 54.224.179.142
+  become: yes
+  vars:
+    db_name: redhatdb
+    db_user: redhat
+    s3_bucket: ansible.database
+  tasks:
+
+    - name: Create a backup of the PostgreSQL database
+      command: >
+        pg_dump -U {{ db_user }} {{ db_name }} | gzip > /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
+      environment:
+        PGPASSWORD: your_database_password
+
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Upload backup to S3
+      command: >
+        aws s3 cp /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
+        s3://{{ s3_bucket }}/
+
+    - name: Clean up local backup file
+      file:
+        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
+        state: absent
