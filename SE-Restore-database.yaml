@@ -26,13 +26,19 @@
       command: >
         gunzip {{ backup_file_path }}
 
+    - name: Check extracted backup file size
+      command: >
+        ls -lh /tmp/db-backup-{{ ansible_date_time.date }}.sql
+
     - name: Restore the PostgreSQL database
+      become_user: postgres
       shell: >
         psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
       environment:
         PGPASSWORD: redhat
+      register: restore_result
+      ignore_errors: yes
 
-    - name: Clean up local backup file
-      file:
-        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
-        state: absent
+    - name: Debug restore result
+      debug:
+        msg: "{{ restore_result }}"
