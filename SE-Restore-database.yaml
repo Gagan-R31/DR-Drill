@@ -1,5 +1,5 @@
 - name: Install PostgreSQL and restore database from S3
-  hosts: 52.14.121.95
+  hosts: all
   become: yes
   vars:
     db_name: redhatdb
@@ -21,24 +21,40 @@
       command: >
         aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }}
         {{ backup_file_path }}
+      register: s3_download
+      changed_when: "'downloaded' in s3_download.stdout"
+
+    - name: Debug S3 download result
+      debug:
+        msg: "Backup file downloaded: {{ s3_download.stdout }}"
+
+    - name: Check if backup file exists
+      stat:
+        path: "{{ backup_file_path }}"
+      register: backup_file_stat
+
+    - name: Fail if backup file does not exist
+      fail:
+        msg: "Backup file does not exist at {{ backup_file_path }}"
+      when: not backup_file_stat.stat.exists
 
     - name: Extract the database backup
       command: >
         gunzip {{ backup_file_path }}
+      when: backup_file_stat.stat.exists
 
-    - name: Check extracted backup file size
-      command: >
-        ls -lh /tmp/db-backup-{{ ansible_date_time.date }}.sql
+    - name: Debug extraction
+      debug:
+        msg: "Backup file extracted: {{ backup_file_path | replace('.gz', '') }}"
 
     - name: Restore the PostgreSQL database
       become_user: postgres
       shell: >
         psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
       environment:
-        PGPASSWORD: redhat
-      register: restore_result
-      ignore_errors: yes
+        PGPASSWORD: your_database_password
 
-    - name: Debug restore result
-      debug:
-        msg: "{{ restore_result }}"
+    - name: Clean up local backup file
+      file:
+        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
+        state: absent
