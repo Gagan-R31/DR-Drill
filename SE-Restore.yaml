@@ -1,5 +1,5 @@
 - name: Restore latest backup on DR-webnode
-  hosts: DR-webnode
+  hosts: all
   become: yes
   tasks:
 
