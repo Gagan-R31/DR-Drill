@@ -1,6 +1,6 @@
 ---
 - name: Perform Health Check on App Server
-  hosts: localhost
+  hosts: all
   tasks:
     - name: Check if the app server is alive
       uri:
