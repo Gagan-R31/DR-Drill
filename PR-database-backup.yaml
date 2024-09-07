@@ -11,7 +11,7 @@
       shell: >
         pg_dump -U {{ db_user }} {{ db_name }} | gzip > /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
       environment:
-        PGPASSWORD: your_database_password
+        PGPASSWORD: redhat
 
     - name: Install AWS CLI
       apt:
