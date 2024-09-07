@@ -1,6 +1,6 @@
 ---
 - name: Test SSH Connection to EC2 Instance
-  hosts: web
+  hosts: all
   tasks:
     - name: Check SSH connection to EC2 using ping
       ansible.builtin.ping:
