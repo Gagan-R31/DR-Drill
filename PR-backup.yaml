@@ -1,5 +1,5 @@
 - name: Backup web application and upload to S3
-  hosts: webnode
+  hosts: all
   become: yes
   tasks:
 
