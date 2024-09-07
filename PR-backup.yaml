@@ -1,0 +1,23 @@
+- name: Backup web application and upload to S3
+  hosts: webnode
+  become: yes
+  tasks:
+
+    - name: Create a backup of the web application
+      command: >
+        tar czf /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz -C /var/www/html .
+
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Upload backup to S3
+      command: >
+        aws s3 cp /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz
+        s3://ansible-backup1/
+
+    - name: Clean up local backup file
+      file:
+        path: /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz
+        state: absent
