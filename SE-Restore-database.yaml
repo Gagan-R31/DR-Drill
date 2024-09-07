@@ -1,5 +1,5 @@
 - name: Install PostgreSQL and restore database from S3
-  hosts: all
+  hosts: 52.14.121.95
   become: yes
   vars:
     db_name: redhatdb
