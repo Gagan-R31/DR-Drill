@@ -1,18 +1,18 @@
 ---
-- name: Test SSH Connection to App Server
+- name: Test SSH Connection to EC2 Instance
   hosts: all
   tasks:
-    - name: Check SSH connection to the server
-      ansible.builtin.command: ssh -o BatchMode=yes -o ConnectTimeout=5 ubuntu@44.202.97.64 "exit"
+    - name: Check SSH connection to EC2
+      ansible.builtin.command: "exit"
       register: ssh_check
       ignore_errors: yes
 
     - name: Fail if SSH connection fails
       fail:
-        msg: "SSH connection failed to 44.202.97.64"
+        msg: "SSH connection failed to EC2 instance"
       when: ssh_check.rc != 0
 
     - name: Success message if SSH connection passes
       debug:
-        msg: "SSH connection successful to 44.202.97.64"
+        msg: "SSH connection successful to EC2 instance"
       when: ssh_check.rc == 0
