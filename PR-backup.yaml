@@ -1,5 +1,5 @@
 - name: Backup web application and upload to S3
-  hosts: all
+  hosts: 44.202.97.64
   become: yes
   tasks:
 
