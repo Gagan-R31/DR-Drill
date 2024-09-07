@@ -1,6 +1,6 @@
 ---
 - name: Test SSH Connection to App Server
-  hosts: localhost
+  hosts: all
   tasks:
     - name: Check SSH connection to the server
       ansible.builtin.command: ssh -o BatchMode=yes -o ConnectTimeout=5 ubuntu@44.202.97.64 "exit"
