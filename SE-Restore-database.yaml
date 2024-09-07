@@ -1,0 +1,38 @@
+- name: Install PostgreSQL and restore database from S3
+  hosts: 52.14.121.95
+  become: yes
+  vars:
+    db_name: redhatdb
+    db_user: redhat
+    s3_bucket: ansible.database
+    backup_file: db-backup-{{ ansible_date_time.date }}.sql.gz
+    backup_file_path: /tmp/{{ backup_file }}
+  tasks:
+
+    - name: Install PostgreSQL and utilities
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+          - awscli
+        state: present
+
+    - name: Download database backup from S3
+      command: >
+        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }}
+        {{ backup_file_path }}
+
+    - name: Extract the database backup
+      command: >
+        gunzip {{ backup_file_path }}
+
+    - name: Restore the PostgreSQL database
+      shell: >
+        psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
+      environment:
+        PGPASSWORD: your_database_password
+
+    - name: Clean up local backup file
+      file:
+        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
+        state: absent
