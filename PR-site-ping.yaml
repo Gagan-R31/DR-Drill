@@ -8,7 +8,7 @@
         return_content: yes
       register: result
       until: '"alive" in result.content'
-      retries: 10
+      retries: 3
       delay: 1
     #  failed_when: result.status is not defined or '"alive" not in result.content'
       ignore_errors: yes
