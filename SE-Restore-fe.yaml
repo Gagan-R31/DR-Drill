@@ -31,7 +31,7 @@
       shell: >
         psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
       environment:
-        PGPASSWORD: your_database_password
+        PGPASSWORD: redhat
 
     - name: Clean up local backup file
       file:
