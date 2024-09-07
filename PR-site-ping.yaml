@@ -1,18 +1,18 @@
 ---
 - name: Test SSH Connection to EC2 Instance
-  hosts: all
+  hosts: web
   tasks:
-    - name: Check SSH connection to EC2
-      ansible.builtin.command: "exit"
+    - name: Check SSH connection to EC2 using ping
+      ansible.builtin.ping:
       register: ssh_check
       ignore_errors: yes
 
     - name: Fail if SSH connection fails
       fail:
         msg: "SSH connection failed to EC2 instance"
-      when: ssh_check.rc != 0
+      when: ssh_check is failed
 
     - name: Success message if SSH connection passes
       debug:
         msg: "SSH connection successful to EC2 instance"
-      when: ssh_check.rc == 0
+      when: ssh_check is succeeded
