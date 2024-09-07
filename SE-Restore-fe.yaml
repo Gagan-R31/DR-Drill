@@ -1,39 +1,45 @@
-- name: Install PostgreSQL and restore database from S3
+---
+- name: Restore latest backup on DR-webnode
   hosts: all
   become: yes
-  vars:
-    db_name: redhatdb
-    db_user: redhat
-    s3_bucket: ansible.database
-    backup_file: db-backup-{{ ansible_date_time.date }}.sql.gz
-    backup_file_path: /tmp/{{ backup_file }}
   tasks:
 
-    - name: Install PostgreSQL and utilities
+    - name: Install AWS CLI
       apt:
-        name:
-          - postgresql
-          - postgresql-contrib
-          - awscli
+        name: awscli
         state: present
 
-    - name: Download database backup from S3
-      command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }}
-        {{ backup_file_path }}
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
 
-    - name: Extract the database backup
+    - name: Get the latest backup file from S3
       command: >
-        gunzip {{ backup_file_path }}
+        aws s3 ls s3://ansible-backup1/ --region us-east-1
+      register: s3_list
 
-    - name: Restore the PostgreSQL database
-      become_user: postgres
-      shell: >
-        psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
-      environment:
-        PGPASSWORD: redhat
+    - name: Set the latest backup filename
+      set_fact:
+        latest_backup: "{{ s3_list.stdout_lines | select('search', 'webapp-backup-') | list | last | regex_replace('.* (webapp-backup-\\S+\\.tar\\.gz)', '\\1') }}"
+
+    - name: Download the latest backup from S3
+      command: >
+        aws s3 cp s3://ansible-backup1/{{ latest_backup }} /tmp/{{ latest_backup }} --region us-east-1
+
+    - name: Extract the backup
+      command: >
+        tar xzf /tmp/{{ latest_backup }} -C /var/www/html
+
+    - name: Set ownership and permissions
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        recurse: yes
 
     - name: Clean up local backup file
       file:
-        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
+        path: /tmp/{{ latest_backup }}
         state: absent
