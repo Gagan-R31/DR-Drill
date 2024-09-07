@@ -1,0 +1,44 @@
+- name: Restore latest backup on DR-webnode
+  hosts: DR-webnode
+  become: yes
+  tasks:
+
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Get the latest backup file from S3
+      command: >
+        aws s3 ls s3://ansible-backup1/ --region us-east-1
+      register: s3_list
+
+    - name: Set the latest backup filename
+      set_fact:
+        latest_backup: "{{ s3_list.stdout_lines | select('search', 'webapp-backup-') | list | last | regex_replace('.* (webapp-backup-\\S+\\.tar\\.gz)', '\\1') }}"
+
+    - name: Download the latest backup from S3
+      command: >
+        aws s3 cp s3://ansible-backup1/{{ latest_backup }} /tmp/{{ latest_backup }} --region us-east-1
+
+    - name: Extract the backup
+      command: >
+        tar xzf /tmp/{{ latest_backup }} -C /var/www/html
+
+    - name: Set ownership and permissions
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        recurse: yes
+
+    - name: Clean up local backup file
+      file:
+        path: /tmp/{{ latest_backup }}
+        state: absent
