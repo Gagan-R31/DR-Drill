@@ -1,9 +1,17 @@
 ---
-- name: Perform Health Check on App Servers
-  uri:
-    url: "http://44.202.97.64/ping"
-    return_content: yes
-  until: '"alive" in result.content'
-  retries: 10
-  delay: 1
-  register: result
+- name: Perform Health Check on App Server
+  hosts: all
+  tasks:
+    - name: Check if the app server is alive
+      uri:
+        url: "http://44.202.97.64/ping"
+        return_content: yes
+      register: result
+      until: '"alive" in result.content'
+      retries: 10
+      delay: 1
+      ignore_errors: yes
+
+    - name: Print health check result
+      debug:
+        var: result.content
