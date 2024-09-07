@@ -8,7 +8,7 @@
   tasks:
 
     - name: Create a backup of the PostgreSQL database
-      command: >
+      shell: >
         pg_dump -U {{ db_user }} {{ db_name }} | gzip > /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
       environment:
         PGPASSWORD: your_database_password
