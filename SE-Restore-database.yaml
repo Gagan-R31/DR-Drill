@@ -12,13 +12,14 @@
     db_restore_path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
     remote_tmp: /tmp/ansible  # Custom temporary directory
   tasks:
+
     - name: Ensure temporary directory exists
       file:
         path: "{{ remote_tmp }}"
         state: directory
         mode: '1777'  # Ensure it has appropriate permissions
 
-    - name: Install PostgreSQL, gzip, and AWS CLI
+    - name: Install PostgreSQL, gzip, and utilities
       apt:
         name:
           - postgresql
@@ -27,24 +28,16 @@
           - gzip
         state: present
 
-    - name: Debug: Display S3 bucket contents
-      command: aws s3 ls s3://{{ s3_bucket }}/ --recursive
-      register: s3_bucket_contents
-
-    - name: Debug S3 bucket contents
-      debug:
-        msg: "S3 bucket contents: {{ s3_bucket_contents.stdout }}"
-
     - name: Download database backup from S3
       command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }} --debug
+        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }}
       register: s3_download
-      failed_when: "'404' in s3_download.stderr or 'NoSuchKey' in s3_download.stderr"
+      failed_when: "'404' in s3_download.stderr"
       changed_when: true
 
     - name: Debug S3 download result
       debug:
-        msg: "Backup file download result: {{ s3_download.stdout }}"
+        msg: "Backup file downloaded: {{ s3_download.stdout }}"
 
     - name: Check if backup file exists
       stat:
