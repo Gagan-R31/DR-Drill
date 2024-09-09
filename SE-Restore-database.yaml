@@ -1,61 +1,42 @@
-- name: Install PostgreSQL, fetch backup from S3, and restore database
+- name: Restore PostgreSQL database from S3 backup
   hosts: 3.15.156.213
   become: yes
   vars:
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database
-    backup_file: db-backup.sql.gz  # Name of the backup file in S3
-    backup_file_path: /tmp/{{ backup_file }}  # Path to store the downloaded file
-    db_restore_path: /tmp/db-backup.sql  # Temporary path for the restored SQL file
+    backup_date: "{{ ansible_date_time.date }}"  # Adjust if needed
   tasks:
 
-    - name: Install PostgreSQL and necessary utilities
+    - name: Install PostgreSQL and gzip
       apt:
         name:
           - postgresql
-          - postgresql-contrib
-          - awscli
+          - postgresql-client
           - gzip
         state: present
 
-    - name: Ensure the PostgreSQL service is started
-      service:
-        name: postgresql
-        state: started
-        enabled: yes
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
 
-    - name: Download database backup from S3
+    - name: Download backup from S3
       command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }}
-      register: s3_download
-      changed_when: "'downloaded' in s3_download.stdout"
+        aws s3 cp s3://{{ s3_bucket }}/db-backup-{{ backup_date }}.sql.gz /tmp/db-backup-{{ backup_date }}.sql.gz
+      register: download_status
+      failed_when: download_status.rc != 0
 
-    - name: Debug S3 download result
-      debug:
-        msg: "Backup file downloaded: {{ s3_download.stdout }}"
-
-    - name: Check if the backup file exists
-      stat:
-        path: "{{ backup_file_path }}"
-      register: backup_file_stat
-
-    - name: Fail if backup file does not exist
-      fail:
-        msg: "Backup file does not exist at {{ backup_file_path }}"
-      when: not backup_file_stat.stat.exists
-
-    - name: Extract the database backup
-      command: gunzip -c {{ backup_file_path }} > {{ db_restore_path }}
-      when: backup_file_stat.stat.exists
-
-    - name: Restore the PostgreSQL database
-      command: psql -U {{ db_user }} {{ db_name }} < {{ db_restore_path }}
-      become_user: postgres
+    - name: Restore PostgreSQL database from backup
+      shell: >
+        gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U {{ db_user }} -d {{ db_name }}
       environment:
         PGPASSWORD: redhat
+      register: restore_status
+      failed_when: restore_status.rc != 0
 
-    - name: Clean up local restored SQL file
+    - name: Clean up local backup file
       file:
-        path: "{{ db_restore_path }}"
+        path: /tmp/db-backup-{{ backup_date }}.sql.gz
         state: absent
+      when: download_status.rc == 0 and restore_status.rc == 0
