@@ -1,25 +1,16 @@
-- name: Install PostgreSQL and restore database from S3
+- name: Install PostgreSQL, fetch backup from S3, and restore database
   hosts: 3.15.156.213
   become: yes
-  become_method: sudo
-  become_user: root
   vars:
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database
-    backup_file: db-backup-{{ ansible_date_time.date }}.sql.gz
-    backup_file_path: /{{ backup_file }}  # Updated path
-    db_restore_path: /db-backup-{{ ansible_date_time.date }}.sql  # Updated path
-    remote_tmp: /root/ansible  # Updated custom temporary directory path
+    backup_file: db-backup.sql.gz  # Name of the backup file in S3
+    backup_file_path: /tmp/{{ backup_file }}  # Path to store the downloaded file
+    db_restore_path: /tmp/db-backup.sql  # Temporary path for the restored SQL file
   tasks:
 
-    - name: Ensure temporary directory exists
-      file:
-        path: "{{ remote_tmp }}"
-        state: directory
-        mode: '1777'  # Ensure it has appropriate permissions
-
-    - name: Install PostgreSQL, gzip, and utilities
+    - name: Install PostgreSQL and necessary utilities
       apt:
         name:
           - postgresql
@@ -28,22 +19,23 @@
           - gzip
         state: present
 
-    - name: Debug variables
-      debug:
-        msg: "Backup file path: {{ backup_file_path }}"
+    - name: Ensure the PostgreSQL service is started
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
 
     - name: Download database backup from S3
       command: >
         aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }}
       register: s3_download
-      failed_when: "'404' in s3_download.stderr"
-      changed_when: true
+      changed_when: "'downloaded' in s3_download.stdout"
 
     - name: Debug S3 download result
       debug:
-        msg: "S3 download command output: {{ s3_download.stdout }}\nError: {{ s3_download.stderr }}"
+        msg: "Backup file downloaded: {{ s3_download.stdout }}"
 
-    - name: Check if backup file exists
+    - name: Check if the backup file exists
       stat:
         path: "{{ backup_file_path }}"
       register: backup_file_stat
@@ -53,25 +45,9 @@
         msg: "Backup file does not exist at {{ backup_file_path }}"
       when: not backup_file_stat.stat.exists
 
-    - name: Check backup file size
-      debug:
-        msg: "Backup file size: {{ backup_file_stat.stat.size }} bytes"
-
-    - name: Validate backup file type (gzip check)
-      command: file {{ backup_file_path }}
-      register: file_type
-      failed_when: "'gzip compressed data' not in file_type.stdout"
-
     - name: Extract the database backup
-      shell: gunzip -c {{ backup_file_path }} > {{ db_restore_path }}
-      register: extraction_result
-      failed_when: extraction_result.rc != 0
+      command: gunzip -c {{ backup_file_path }} > {{ db_restore_path }}
       when: backup_file_stat.stat.exists
-
-    - name: Debug extraction result
-      debug:
-        msg: "Backup file extracted: {{ db_restore_path }}"
-      when: extraction_result.rc == 0
 
     - name: Restore the PostgreSQL database
       command: psql -U {{ db_user }} {{ db_name }} < {{ db_restore_path }}
