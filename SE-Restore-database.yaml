@@ -12,7 +12,6 @@
     db_restore_path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
     remote_tmp: /tmp/ansible  # Custom temporary directory
   tasks:
-
     - name: Ensure temporary directory exists
       file:
         path: "{{ remote_tmp }}"
