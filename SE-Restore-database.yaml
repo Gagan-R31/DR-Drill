@@ -1,5 +1,5 @@
 - name: Install PostgreSQL and restore database from S3
-  hosts: 52.14.121.95
+  hosts: 3.15.156.213
   become: yes
   become_method: sudo
   become_user: root
