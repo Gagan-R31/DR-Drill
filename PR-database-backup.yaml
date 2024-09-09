@@ -27,4 +27,4 @@
       file:
         path: /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
         state: absent
-this is my playbook to storing it on s3 bucket
+
