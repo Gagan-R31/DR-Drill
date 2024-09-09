@@ -28,6 +28,10 @@
           - gzip
         state: present
 
+    - name: Debug variables
+      debug:
+        msg: "Backup file path: {{ backup_file_path }}"
+
     - name: Download database backup from S3
       command: >
         aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }}
@@ -37,7 +41,7 @@
 
     - name: Debug S3 download result
       debug:
-        msg: "Backup file downloaded: {{ s3_download.stdout }}"
+        msg: "S3 download command output: {{ s3_download.stdout }}\nError: {{ s3_download.stderr }}"
 
     - name: Check if backup file exists
       stat:
@@ -60,11 +64,14 @@
 
     - name: Extract the database backup
       shell: gunzip -c {{ backup_file_path }} > {{ db_restore_path }}
+      register: extraction_result
+      failed_when: extraction_result.rc != 0
       when: backup_file_stat.stat.exists
 
-    - name: Debug extraction
+    - name: Debug extraction result
       debug:
         msg: "Backup file extracted: {{ db_restore_path }}"
+      when: extraction_result.rc == 0
 
     - name: Restore the PostgreSQL database
       command: psql -U {{ db_user }} {{ db_name }} < {{ db_restore_path }}
