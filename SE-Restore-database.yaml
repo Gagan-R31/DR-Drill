@@ -1,5 +1,5 @@
 - name: Install PostgreSQL and restore database from S3
-  hosts: 52.14.121.95
+  hosts: all
   become: yes
   vars:
     db_name: redhatdb
@@ -52,11 +52,11 @@
         msg: "Backup file extracted: {{ backup_file_path | replace('.gz', '') }}"
 
     - name: Restore the PostgreSQL database
-      become_user: postgres
-      shell: >
+      command: >
         psql -U {{ db_user }} {{ db_name }} < /tmp/db-backup-{{ ansible_date_time.date }}.sql
+      become_user: postgres
       environment:
-        PGPASSWORD: redhat
+        PGPASSWORD: your_database_password
 
     - name: Clean up local backup file
       file:
