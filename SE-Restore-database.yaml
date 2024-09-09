@@ -8,9 +8,9 @@
     db_user: redhat
     s3_bucket: ansible.database
     backup_file: db-backup-{{ ansible_date_time.date }}.sql.gz
-    backup_file_path: /tmp/{{ backup_file }}
-    db_restore_path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
-    remote_tmp: /tmp/ansible  # Custom temporary directory
+    backup_file_path: /{{ backup_file }}  # Updated path
+    db_restore_path: /db-backup-{{ ansible_date_time.date }}.sql  # Updated path
+    remote_tmp: /root/ansible  # Updated custom temporary directory path
   tasks:
 
     - name: Ensure temporary directory exists
