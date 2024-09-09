@@ -1,78 +1,30 @@
-- name: Install PostgreSQL and restore database from S3
+- name: Backup PostgreSQL database and upload to S3
   hosts: 54.224.179.142
   become: yes
-  become_method: sudo
-  become_user: root
   vars:
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database
-    backup_file: db-backup-{{ ansible_date_time.date }}.sql.gz
-    backup_file_path: /tmp/{{ backup_file }}
-    db_restore_path: /tmp/db-backup-{{ ansible_date_time.date }}.sql
-    remote_tmp: /tmp/ansible  # Custom temporary directory
   tasks:
 
-    - name: Ensure temporary directory exists
-      file:
-        path: "{{ remote_tmp }}"
-        state: directory
-        mode: '1777'  # Ensure it has appropriate permissions
-
-    - name: Install PostgreSQL, gzip, and utilities
-      apt:
-        name:
-          - postgresql
-          - postgresql-contrib
-          - awscli
-          - gzip
-        state: present
-
-    - name: Download database backup from S3
-      command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ backup_file }} {{ backup_file_path }}
-      register: s3_download
-      failed_when: "'404' in s3_download.stderr"
-      changed_when: true
-
-    - name: Debug S3 download result
-      debug:
-        msg: "Backup file downloaded: {{ s3_download.stdout }}"
-
-    - name: Check if backup file exists
-      stat:
-        path: "{{ backup_file_path }}"
-      register: backup_file_stat
-
-    - name: Fail if backup file does not exist
-      fail:
-        msg: "Backup file does not exist at {{ backup_file_path }}"
-      when: not backup_file_stat.stat.exists
-
-    - name: Check backup file size
-      debug:
-        msg: "Backup file size: {{ backup_file_stat.stat.size }} bytes"
-
-    - name: Validate backup file type (gzip check)
-      command: file {{ backup_file_path }}
-      register: file_type
-      failed_when: "'gzip compressed data' not in file_type.stdout"
-
-    - name: Extract the database backup
-      shell: gunzip -c {{ backup_file_path }} > {{ db_restore_path }}
-      when: backup_file_stat.stat.exists
-
-    - name: Debug extraction
-      debug:
-        msg: "Backup file extracted: {{ db_restore_path }}"
-
-    - name: Restore the PostgreSQL database
-      command: psql -U {{ db_user }} {{ db_name }} < {{ db_restore_path }}
-      become_user: postgres
+    - name: Create a backup of the PostgreSQL database
+      shell: >
+        pg_dump -U {{ db_user }} {{ db_name }} | gzip > /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
       environment:
         PGPASSWORD: redhat
 
-    - name: Clean up local restored SQL file
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    - name: Upload backup to S3
+      command: >
+        aws s3 cp /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
+        s3://{{ s3_bucket }}/
+
+    - name: Clean up local backup file
       file:
-        path: "{{ db_restore_path }}"
+        path: /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
         state: absent
+this is my playbook to storing it on s3 bucket
