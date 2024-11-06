@@ -7,6 +7,11 @@
     aws_region: us-east-1
     s3_bucket: dr-fe
   tasks:
+    - name: Ensure unzip is installed
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes  
 
     - name: Download AWS CLI installer
       command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
