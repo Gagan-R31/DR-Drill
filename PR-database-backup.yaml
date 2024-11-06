@@ -5,6 +5,7 @@
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database1
+    aws_region: us-east-2
   tasks:
 
     - name: Create a backup of the PostgreSQL database
@@ -22,9 +23,9 @@
       command: >
         aws s3 cp /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
         s3://{{ s3_bucket }}/
+        --region {{ aws_region }}
 
     - name: Clean up local backup file
       file:
         path: /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
         state: absent
-
