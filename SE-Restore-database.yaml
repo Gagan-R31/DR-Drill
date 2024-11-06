@@ -1,28 +1,40 @@
 - name: Restore PostgreSQL database from S3 backup
   hosts: 18.117.124.96
+  remote_user: ubuntu
   become: yes
   vars:
     db_name: redhatdb
     db_user: redhat
-    s3_bucket: ansible.database1
-    aws_region: us-east-2
-    backup_date: "{{ ansible_date_time.date }}"  # Adjust if needed
+    s3_bucket: dr-db
+    aws_region: us-east-1
+    aws_access_key: AKIAVY2PHB5JDHC5JZWP
+    aws_secret_key: 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
+    backup_date: "{{ ansible_date_time.date }}"
   tasks:
 
-    - name: Install PostgreSQL and gzip
+    - name: Install PostgreSQL, gzip, and unzip
       apt:
         name:
           - postgresql
           - postgresql-client
           - gzip
+          - unzip
         state: present
+        update_cache: yes
+
+    - name: Download AWS CLI installer
+      command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+
+    - name: Unzip AWS CLI installer
+      command: unzip /tmp/awscliv2.zip -d /tmp/
 
     - name: Install AWS CLI
-      apt:
-        name: awscli
-        state: present
+      command: sudo /tmp/aws/install
 
     - name: Download backup from S3
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
         aws s3 cp s3://{{ s3_bucket }}/db-backup-{{ backup_date }}.sql.gz /tmp/db-backup-{{ backup_date }}.sql.gz
         --region {{ aws_region }}
@@ -33,4 +45,12 @@
       shell: >
         gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U {{ db_user }} -d {{ db_name }}
       environment:
-        PGPASSWORD:
+        PGPASSWORD: redhat
+      register: restore_status
+      failed_when: restore_status.rc != 0
+
+    - name: Clean up local backup file
+      file:
+        path: /tmp/db-backup-{{ backup_date }}.sql.gz
+        state: absent
+      when: download_status.rc == 0 and restore_status.rc == 0
