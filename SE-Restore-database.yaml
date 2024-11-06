@@ -57,7 +57,6 @@
       file:
         path: /tmp/db-backup-{{ backup_date }}.sql.gz
         state: absent
-      when: download_status.rc == 0 and restore_status.rc == 0
 
   handlers:
     - name: Restart PostgreSQL
