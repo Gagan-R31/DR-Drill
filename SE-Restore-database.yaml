@@ -23,11 +23,12 @@
         state: present
         update_cache: yes
 
-    - name: Configure PostgreSQL to allow password authentication for local connections
+    - name: Configure PostgreSQL to use password authentication for the user
       lineinfile:
         dest: /etc/postgresql/16/main/pg_hba.conf
-        regexp: '^local\s+all\s+postgres\s+peer$'
-        line: 'local all postgres md5'
+        regexp: '^local\s+{{ db_name }}\s+{{ db_user }}\s+peer$'
+        line: 'local {{ db_name }} {{ db_user }} md5'
+        state: present
       notify: Restart PostgreSQL
 
     - name: Ensure PostgreSQL is listening on localhost
@@ -42,29 +43,6 @@
         name: postgresql
         state: restarted
 
-    - name: Create database user 'redhat'
-      become_user: postgres
-      postgresql_user:
-        name: "{{ db_user }}"
-        password: "{{ db_password }}"
-        state: present
-
-    - name: Create database 'redhatdb'
-      become_user: postgres
-      postgresql_db:
-        name: "{{ db_name }}"
-        owner: "{{ db_user }}"
-        encoding: "UTF8"
-        state: present
-
-    - name: Grant all privileges on database 'redhatdb' to user 'redhat'
-      become_user: postgres
-      postgresql_privs:
-        db: "{{ db_name }}"
-        roles: "{{ db_user }}"
-        type: database
-        privs: "ALL"
-
     - name: Download backup from S3
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
@@ -74,14 +52,6 @@
         --region {{ aws_region }}
       register: download_status
       failed_when: download_status.rc != 0
-
-    - name: Restore PostgreSQL database from backup
-      shell: >
-        gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U postgres -d {{ db_name }}
-      environment:
-        PGPASSWORD: "{{ db_password }}"
-      register: restore_status
-      failed_when: restore_status.rc != 0
 
     - name: Clean up local backup file
       file:
