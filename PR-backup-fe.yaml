@@ -12,18 +12,13 @@
         tar czf /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz -C /var/www/html .
 
     - name: Download AWS CLI installer
-      get_url:
-        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-        dest: /tmp/awscliv2.zip
+      command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
 
     - name: Unzip AWS CLI installer
-      unarchive:
-        src: /tmp/awscliv2.zip
-        dest: /tmp
-        remote_src: yes
+      command: unzip /tmp/awscliv2.zip -d /tmp/
 
     - name: Install AWS CLI
-      command: /tmp/aws/install
+      command: sudo /tmp/aws/install
 
     - name: Upload backup to S3
       command: >
