@@ -2,6 +2,7 @@
   hosts: 52.87.209.246
   become: yes
   vars:
+    s3_bucket: dr-db
     db_name: redhatdb
     db_user: redhat
     aws_region: us-east-1
