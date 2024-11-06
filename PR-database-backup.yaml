@@ -1,5 +1,5 @@
 - name: Backup PostgreSQL database and upload to S3
-  hosts: 54.224.179.142
+  hosts: 52.87.209.246
   become: yes
   vars:
     db_name: redhatdb
