@@ -6,6 +6,8 @@
   vars:
     aws_region: us-east-1
     s3_bucket: dr-fe
+    aws_access_key: AKIAVY2PHB5JDHC5JZWP
+    aws_secret_key: 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
   tasks:
     - name: Ensure unzip is installed
       apt:
@@ -13,14 +15,14 @@
         state: present
         update_cache: yes  
 
-    - name: Download AWS CLI installer
-      command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    # - name: Download AWS CLI installer
+    #   command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
 
-    - name: Unzip AWS CLI installer
-      command: unzip /tmp/awscliv2.zip -d /tmp/
+    # - name: Unzip AWS CLI installer
+    #   command: unzip /tmp/awscliv2.zip -d /tmp/
 
-    - name: Install AWS CLI
-      command: sudo /tmp/aws/install
+    # - name: Install AWS CLI
+    #   command: sudo /tmp/aws/install
 
     - name: Install Nginx
       apt:
