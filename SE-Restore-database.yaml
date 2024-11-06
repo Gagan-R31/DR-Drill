@@ -5,7 +5,7 @@
   vars:
     db_name: redhatdb
     db_user: redhat
-    db_password: redhat  # Set the correct password here
+    db_password: redhat  # Set the password for the 'redhat' user
     s3_bucket: dr-db
     aws_region: us-east-1
     aws_access_key: AKIAVY2PHB5JDHC5JZWP
@@ -23,22 +23,11 @@
         state: present
         update_cache: yes
 
-    # Uncomment the following tasks if AWS CLI is not already installed on the host
-    # - name: Download AWS CLI installer
-    #   command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-
-    # - name: Unzip AWS CLI installer
-    #   command: unzip /tmp/awscliv2.zip -d /tmp/
-
-    # - name: Install AWS CLI
-    #   command: sudo /tmp/aws/install
-
-    - name: Configure PostgreSQL to use password authentication
+    - name: Configure PostgreSQL to allow password authentication for local connections
       lineinfile:
         dest: /etc/postgresql/16/main/pg_hba.conf
-        regexp: '^local\s+{{ db_name }}\s+{{ db_user }}\s+peer$'
-        line: 'local {{ db_name }} {{ db_user }} md5'
-        state: present
+        regexp: '^local\s+all\s+postgres\s+peer$'
+        line: 'local all postgres md5'
       notify: Restart PostgreSQL
 
     - name: Ensure PostgreSQL is listening on localhost
@@ -53,6 +42,29 @@
         name: postgresql
         state: restarted
 
+    - name: Create database user 'redhat'
+      become_user: postgres
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        state: present
+
+    - name: Create database 'redhatdb'
+      become_user: postgres
+      postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        encoding: "UTF8"
+        state: present
+
+    - name: Grant all privileges on database 'redhatdb' to user 'redhat'
+      become_user: postgres
+      postgresql_privs:
+        db: "{{ db_name }}"
+        roles: "{{ db_user }}"
+        type: database
+        privs: "ALL"
+
     - name: Download backup from S3
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
@@ -65,7 +77,7 @@
 
     - name: Restore PostgreSQL database from backup
       shell: >
-        gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U {{ db_user }} -d {{ db_name }}
+        gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U postgres -d {{ db_name }}
       environment:
         PGPASSWORD: "{{ db_password }}"
       register: restore_status
