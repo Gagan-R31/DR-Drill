@@ -1,5 +1,6 @@
 - name: Backup web application and upload to S3
   hosts: 54.147.91.200
+  remote_user: ubuntu
   become: yes
   vars:
     s3_bucket: ansible-backup1
