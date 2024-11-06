@@ -2,6 +2,9 @@
 - name: Restore latest backup from primary site
   hosts: 3.135.229.101
   become: yes
+  vars:
+    aws_region: us-east-2
+    s3_bucket: ansible-backup1
   tasks:
 
     - name: Install AWS CLI
@@ -16,7 +19,7 @@
 
     - name: Get the latest backup file from S3
       command: >
-        aws s3 ls s3://ansible-backup1/ --region us-east-1
+        aws s3 ls s3://{{ s3_bucket }}/ --region {{ aws_region }}
       register: s3_list
 
     - name: Set the latest backup filename
@@ -25,7 +28,7 @@
 
     - name: Download the latest backup from S3
       command: >
-        aws s3 cp s3://ansible-backup1/{{ latest_backup }} /tmp/{{ latest_backup }} --region us-east-1
+        aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup }} /tmp/{{ latest_backup }} --region {{ aws_region }}
 
     - name: Extract the backup
       command: >
