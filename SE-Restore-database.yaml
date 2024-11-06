@@ -35,7 +35,7 @@
 
     - name: Configure PostgreSQL to use password authentication
       lineinfile:
-        dest: /etc/postgresql/12/main/pg_hba.conf  # Adjust path as needed based on PostgreSQL version and system
+        dest: /etc/postgresql/16/main/pg_hba.conf
         regexp: '^local\s+{{ db_name }}\s+{{ db_user }}\s+peer$'
         line: 'local {{ db_name }} {{ db_user }} md5'
         state: present
@@ -43,7 +43,7 @@
 
     - name: Ensure PostgreSQL is listening on localhost
       lineinfile:
-        dest: /etc/postgresql/12/main/postgresql.conf  # Adjust path as needed
+        dest: /etc/postgresql/16/main/postgresql.conf
         regexp: '^#?listen_addresses'
         line: "listen_addresses = 'localhost'"
       notify: Restart PostgreSQL
