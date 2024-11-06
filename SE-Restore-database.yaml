@@ -5,6 +5,7 @@
   vars:
     db_name: redhatdb
     db_user: redhat
+    db_password: redhat  # Set the correct password here
     s3_bucket: dr-db
     aws_region: us-east-1
     aws_access_key: AKIAVY2PHB5JDHC5JZWP
@@ -22,14 +23,35 @@
         state: present
         update_cache: yes
 
-    - name: Download AWS CLI installer
-      command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    # Uncomment the following tasks if AWS CLI is not already installed on the host
+    # - name: Download AWS CLI installer
+    #   command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
 
-    - name: Unzip AWS CLI installer
-      command: unzip /tmp/awscliv2.zip -d /tmp/
+    # - name: Unzip AWS CLI installer
+    #   command: unzip /tmp/awscliv2.zip -d /tmp/
 
-    - name: Install AWS CLI
-      command: sudo /tmp/aws/install
+    # - name: Install AWS CLI
+    #   command: sudo /tmp/aws/install
+
+    - name: Configure PostgreSQL to use password authentication
+      lineinfile:
+        dest: /etc/postgresql/12/main/pg_hba.conf  # Adjust path as needed based on PostgreSQL version and system
+        regexp: '^local\s+{{ db_name }}\s+{{ db_user }}\s+peer$'
+        line: 'local {{ db_name }} {{ db_user }} md5'
+        state: present
+      notify: Restart PostgreSQL
+
+    - name: Ensure PostgreSQL is listening on localhost
+      lineinfile:
+        dest: /etc/postgresql/12/main/postgresql.conf  # Adjust path as needed
+        regexp: '^#?listen_addresses'
+        line: "listen_addresses = 'localhost'"
+      notify: Restart PostgreSQL
+
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
 
     - name: Download backup from S3
       environment:
@@ -45,7 +67,7 @@
       shell: >
         gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U {{ db_user }} -d {{ db_name }}
       environment:
-        PGPASSWORD: redhat
+        PGPASSWORD: "{{ db_password }}"
       register: restore_status
       failed_when: restore_status.rc != 0
 
@@ -54,3 +76,9 @@
         path: /tmp/db-backup-{{ backup_date }}.sql.gz
         state: absent
       when: download_status.rc == 0 and restore_status.rc == 0
+
+  handlers:
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
