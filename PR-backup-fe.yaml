@@ -1,9 +1,9 @@
 - name: Backup web application and upload to S3
   hosts: 54.147.91.200
   become: yes
-  # vars:
-  #   s3_bucket: ansible-backup1
-  #   aws_region: us-east-2
+  vars:
+    s3_bucket: ansible-backup1
+    aws_region: us-east-2
   tasks:
 
     - name: Create a backup of the web application
