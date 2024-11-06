@@ -39,6 +39,9 @@
         latest_backup: "{{ s3_list.stdout_lines | select('search', 'webapp-backup-') | list | last | regex_replace('.* (webapp-backup-\\S+\\.tar\\.gz)', '\\1') }}"
 
     - name: Download the latest backup from S3
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
         aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup }} /tmp/{{ latest_backup }} --region {{ aws_region }}
 
