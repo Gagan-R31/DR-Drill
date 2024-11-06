@@ -4,7 +4,7 @@
   vars:
     db_name: redhatdb
     db_user: redhat
-    s3_bucket: ansible.database
+    s3_bucket: ansible.database1
   tasks:
 
     - name: Create a backup of the PostgreSQL database
