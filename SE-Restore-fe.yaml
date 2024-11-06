@@ -48,13 +48,6 @@
       command: >
         aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup }} /tmp/{{ latest_backup }} --region {{ aws_region }}
 
-    - name: Download the latest backup from S3
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-      command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup }} /tmp/{{ latest_backup }} --region {{ aws_region }}
-
     - name: Extract the backup
       command: >
         tar xzf /tmp/{{ latest_backup }} -C /var/www/html
