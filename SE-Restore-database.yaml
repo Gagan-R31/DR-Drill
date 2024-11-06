@@ -4,7 +4,7 @@
   vars:
     db_name: redhatdb
     db_user: redhat
-    s3_bucket: ansible.database
+    s3_bucket: ansible.database1
     backup_date: "{{ ansible_date_time.date }}"  # Adjust if needed
   tasks:
 
