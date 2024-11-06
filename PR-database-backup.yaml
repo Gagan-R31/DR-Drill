@@ -16,12 +16,19 @@
       environment:
         PGPASSWORD: redhat
 
-    - name: Install AWS CLI
-      apt:
-        name: awscli
-        state: present
+    # - name: Download AWS CLI installer
+    #   command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+
+    # - name: Unzip AWS CLI installer
+    #   command: unzip /tmp/awscliv2.zip -d /tmp/
+
+    # - name: Install AWS CLI
+    #   command: sudo /tmp/aws/install
 
     - name: Upload backup to S3
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
         aws s3 cp /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
         s3://{{ s3_bucket }}/
