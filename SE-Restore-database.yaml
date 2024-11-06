@@ -5,6 +5,7 @@
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database1
+    aws_region: us-east-2
     backup_date: "{{ ansible_date_time.date }}"  # Adjust if needed
   tasks:
 
@@ -24,6 +25,7 @@
     - name: Download backup from S3
       command: >
         aws s3 cp s3://{{ s3_bucket }}/db-backup-{{ backup_date }}.sql.gz /tmp/db-backup-{{ backup_date }}.sql.gz
+        --region {{ aws_region }}
       register: download_status
       failed_when: download_status.rc != 0
 
@@ -31,12 +33,4 @@
       shell: >
         gunzip -c /tmp/db-backup-{{ backup_date }}.sql.gz | psql -U {{ db_user }} -d {{ db_name }}
       environment:
-        PGPASSWORD: redhat
-      register: restore_status
-      failed_when: restore_status.rc != 0
-
-    - name: Clean up local backup file
-      file:
-        path: /tmp/db-backup-{{ backup_date }}.sql.gz
-        state: absent
-      when: download_status.rc == 0 and restore_status.rc == 0
+        PGPASSWORD:
