@@ -7,6 +7,12 @@
     aws_region: us-east-2
   tasks:
 
+    - name: Ensure unzip is installed
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+
     - name: Create a backup of the web application
       command: >
         tar czf /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz -C /var/www/html .
