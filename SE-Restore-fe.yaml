@@ -1,16 +1,21 @@
 ---
 - name: Restore latest backup from primary site
   hosts: 52.15.98.102
+  remote_user: ubuntu
   become: yes
   vars:
-    aws_region: us-east-2
-    s3_bucket: ansible-backup2
+    aws_region: us-east-1
+    s3_bucket: dr-fe
   tasks:
 
+    - name: Download AWS CLI installer
+      command: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+
+    - name: Unzip AWS CLI installer
+      command: unzip /tmp/awscliv2.zip -d /tmp/
+
     - name: Install AWS CLI
-      apt:
-        name: awscli
-        state: present
+      command: sudo /tmp/aws/install
 
     - name: Install Nginx
       apt:
