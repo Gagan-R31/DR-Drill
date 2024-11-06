@@ -1,5 +1,5 @@
 - name: Restore PostgreSQL database from S3 backup
-  hosts: 3.15.156.213
+  hosts: 18.117.124.96
   become: yes
   vars:
     db_name: redhatdb
