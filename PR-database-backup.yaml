@@ -4,8 +4,9 @@
   vars:
     db_name: redhatdb
     db_user: redhat
-    s3_bucket: ansible.database1
     aws_region: us-east-1
+    aws_access_key: AKIAVY2PHB5JDHC5JZWP
+    aws_secret_key: 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
   tasks:
 
     - name: Create a backup of the PostgreSQL database
