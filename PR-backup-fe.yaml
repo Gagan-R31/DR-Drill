@@ -1,6 +1,9 @@
 - name: Backup web application and upload to S3
   hosts: 54.91.231.88
   become: yes
+  vars:
+    s3_bucket: ansible-backup1
+    aws_region: us-east-2
   tasks:
 
     - name: Create a backup of the web application
@@ -15,7 +18,8 @@
     - name: Upload backup to S3
       command: >
         aws s3 cp /tmp/webapp-backup-{{ ansible_date_time.date }}.tar.gz
-        s3://ansible-backup1/
+        s3://{{ s3_bucket }}/
+        --region {{ aws_region }}
 
     - name: Clean up local backup file
       file:
