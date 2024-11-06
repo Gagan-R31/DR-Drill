@@ -5,7 +5,7 @@
     db_name: redhatdb
     db_user: redhat
     s3_bucket: ansible.database1
-    aws_region: us-east-2
+    aws_region: us-east-1
   tasks:
 
     - name: Create a backup of the PostgreSQL database
