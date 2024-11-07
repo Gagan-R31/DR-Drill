@@ -9,11 +9,11 @@
     aws_secret_key: S1cmLkIeVD20cgZUoNgzsvFB4AJDrwINtAv7IyjK
   tasks:
     - name: Find the latest file in S3
+      shell: |
+        aws s3 ls s3://{{ s3_bucket }}/ --region {{ aws_region }} --recursive | sort | tail -n 1 | awk '{print $4}'
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-      command: >
-        aws s3 ls s3://{{ s3_bucket }}/ --region {{ aws_region }} --recursive | sort | tail -n 1 | awk '{print $4}'
       register: latest_file
       changed_when: false
 
