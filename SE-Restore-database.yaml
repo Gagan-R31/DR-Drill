@@ -1,67 +1,27 @@
-- name: Restore PostgreSQL database from the latest S3 backup
+- name: Download the latest file from S3 bucket
   hosts: 18.117.124.96
   remote_user: ubuntu
   become: yes
   vars:
-    db_name: redhatdb
-    db_user: redhat
-    db_password: redhat  # Set the password for the 'redhat' user
     s3_bucket: dr-db
     aws_region: us-east-1
     aws_access_key: AKIAVY2PHB5JDHC5JZWP
     aws_secret_key: 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
   tasks:
-
-    - name: Install PostgreSQL, gzip, and unzip
-      apt:
-        name:
-          - postgresql
-          - postgresql-client
-          - gzip
-          - unzip
-        state: present
-        update_cache: yes
-
-    - name: Configure PostgreSQL to use password authentication for the user
-      lineinfile:
-        dest: /etc/postgresql/16/main/pg_hba.conf
-        regexp: '^local\s+{{ db_name }}\s+{{ db_user }}\s+peer$'
-        line: 'local {{ db_name }} {{ db_user }} md5'
-        state: present
-      notify: Restart PostgreSQL
-
-    - name: Ensure PostgreSQL is listening on localhost
-      lineinfile:
-        dest: /etc/postgresql/16/main/postgresql.conf
-        regexp: '^#?listen_addresses'
-        line: "listen_addresses = 'localhost'"
-      notify: Restart PostgreSQL
-
-    - name: Find the latest backup file in S3
+    - name: Find the latest file in S3
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
         aws s3 ls s3://{{ s3_bucket }}/ --region {{ aws_region }} --recursive | sort | tail -n 1 | awk '{print $4}'
-      register: latest_backup
+      register: latest_file
       changed_when: false
 
-    - name: Download the latest backup file from S3
+    - name: Download the latest file from S3
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
-        aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup.stdout }} /tmp/latest-db-backup.sql.gz --region {{ aws_region }}
+        aws s3 cp s3://{{ s3_bucket }}/{{ latest_file.stdout }} /tmp/latest-file --region {{ aws_region }}
       register: download_status
       failed_when: download_status.rc != 0
-
-    - name: Clean up local backup file
-      file:
-        path: /tmp/latest-db-backup.sql.gz
-        state: absent
-
-  handlers:
-    - name: Restart PostgreSQL
-      service:
-        name: postgresql
-        state: restarted
