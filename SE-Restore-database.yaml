@@ -1,4 +1,4 @@
-- name: Restore PostgreSQL database from S3 backup
+- name: Restore PostgreSQL database from the latest S3 backup
   hosts: 18.117.124.96
   remote_user: ubuntu
   become: yes
@@ -10,7 +10,6 @@
     aws_region: us-east-1
     aws_access_key: AKIAVY2PHB5JDHC5JZWP
     aws_secret_key: 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
-    backup_date: "{{ ansible_date_time.date }}"
   tasks:
 
     - name: Install PostgreSQL, gzip, and unzip
@@ -38,24 +37,27 @@
         line: "listen_addresses = 'localhost'"
       notify: Restart PostgreSQL
 
-    - name: Restart PostgreSQL
-      service:
-        name: postgresql
-        state: restarted
-
-    - name: Download backup from S3
+    - name: Find the latest backup file in S3
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
       command: >
-        aws s3 cp s3://{{ s3_bucket }}/db-backup-{{ backup_date }}.sql.gz /tmp/db-backup-{{ backup_date }}.sql.gz
-        --region {{ aws_region }}
+        aws s3 ls s3://{{ s3_bucket }}/ --region {{ aws_region }} --recursive | sort | tail -n 1 | awk '{print $4}'
+      register: latest_backup
+      changed_when: false
+
+    - name: Download the latest backup file from S3
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+      command: >
+        aws s3 cp s3://{{ s3_bucket }}/{{ latest_backup.stdout }} /tmp/latest-db-backup.sql.gz --region {{ aws_region }}
       register: download_status
       failed_when: download_status.rc != 0
 
     - name: Clean up local backup file
       file:
-        path: /tmp/db-backup-{{ backup_date }}.sql.gz
+        path: /tmp/latest-db-backup.sql.gz
         state: absent
 
   handlers:
