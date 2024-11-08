@@ -5,8 +5,8 @@
   vars:
     s3_bucket: dr-fe
     aws_region: us-east-1
-    aws_access_key: AKIAVY2PHB5JDHC5JZWP
-    aws_secret_key: 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
+    aws_access_key: AKIAVYT57GFOPII2QPXL
+    aws_secret_key: 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
   tasks:
 
     - name: Ensure unzip is installed
