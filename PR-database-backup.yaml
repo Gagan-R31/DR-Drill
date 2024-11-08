@@ -1,5 +1,5 @@
 - name: Backup PostgreSQL database and upload to S3
-  hosts: 52.87.209.246
+  hosts: 54.158.142.5
   remote_user: ubuntu
   become: yes
   vars:
