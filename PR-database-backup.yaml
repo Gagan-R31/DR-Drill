@@ -7,8 +7,8 @@
     db_name: redhatdb
     db_user: redhat
     aws_region: us-east-1
-    aws_access_key: AKIAVYT57GFOPII2QPXL
-    aws_secret_key: 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
+    aws_access_key: AKIAVY2PHB5JDHC5JZWP
+    aws_secret_key: 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
   tasks:
 
     - name: Create a backup of the PostgreSQL database
