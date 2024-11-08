@@ -10,7 +10,13 @@
     aws_access_key: AKIAVY2PHB5JDHC5JZWP
     aws_secret_key: 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
   tasks:
-
+  
+    - name: Ensure unzip is installed
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+        
     - name: Create a backup of the PostgreSQL database
       shell: >
         pg_dump -U {{ db_user }} {{ db_name }} | gzip > /tmp/db-backup-{{ ansible_date_time.date }}.sql.gz
